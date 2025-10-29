@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ប្រព័ន្ធកាលវិភាគសិក្សា</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- jsPDF core library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- jsPDF AutoTable plugin -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.0/jspdf.plugin.autotable.min.js"></script>
+
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>📅 កាលវិភាគសិក្សា</h1>
+            <p>ជ្រើសរើសថ្ងៃ វេន និងថ្នាក់រៀន ដើម្បីបង្ហាញព័ត៌មាន</p>
+        </header>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="day-select">ជ្រើសរើសថ្ងៃ:</label>
+                <select id="day-select">
+                    <option value="AC">ថ្ងៃចន្ទ</option>
+                    <option value="AD">ថ្ងៃអង្គារ៍</option>
+                    <option value="AE">ថ្ងៃពុធ</option>
+                    <option value="AF">ថ្ងៃព្រហស្បតិ៍</option>
+                    <option value="AG">ថ្ងៃសុក្រ</option>
+                    <option value="AH">ថ្ងៃសៅរ៍</option>
+                    <option value="AI">ថ្ងៃអាទិត្យ</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="shift-select">ជ្រើសរើសវេន:</label>
+                <select id="shift-select">
+                    <option value="all">គ្រប់វេន</option>
+                    <option value="ពេញម៉ោង">ពេញម៉ោង</option>
+                    <option value="មួយព្រឹក">មួយព្រឹក</option>
+                    <option value="មួយរសៀល">មួយរសៀល</option>
+                    <option value="ពេលយប់">ពេលយប់</option>
+                    <option value="ពេញមួយថ្ងៃ">ពេញមួយថ្ងៃ</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="class-select">ជ្រើសរើសថ្នាក់:</label>
+                <select id="class-select">
+                    <option>កំពុងទាញទិន្នន័យ...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <div class="stats">
+                <span id="entry-count"></span>
+                <span id="class-count"></span>
+            </div>
+            <button id="download-pdf-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                </svg>
+                Download ជា PDF
+            </button>
+        </div>
+        
+        <div id="loader" class="loader-container">
+            <div class="loader"></div>
+            <p>កំពុងទាញទិន្នន័យពី Google Sheet...</p>
+        </div>
+
+        <div id="schedule-table-container">
+            </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
