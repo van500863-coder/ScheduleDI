@@ -30,6 +30,9 @@ header {
     background: var(--primary-color); color: var(--header-color);
     padding: 20px 30px; display: flex; justify-content: space-between;
     align-items: center;
+    position: sticky; /* Make header sticky on mobile */
+    top: 0;
+    z-index: 10;
 }
 
 header h1 { margin: 0; font-size: 1.8em; }
@@ -38,9 +41,9 @@ header p { margin: 5px 0 0; opacity: 0.9; }
 .content { padding: 30px; }
 .desktop-controls {
     padding: 25px 30px; border-bottom: 1px solid #e0e0e0;
-    display: flex; gap: 20px;
+    display: flex; flex-wrap: wrap; gap: 20px;
 }
-.desktop-controls .select-group { flex: 1; min-width: 200px; }
+.desktop-controls .select-group { flex: 1; min-width: 180px; }
 .select-group label { display: block; margin-bottom: 8px; font-weight: bold; }
 
 select {
@@ -57,11 +60,10 @@ select {
     animation: spin 1s linear infinite; margin: 40px auto; display: none;
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
 #schedule-output { text-align: center; }
 .info-header { margin-bottom: 20px; }
 #class-name-display { color: var(--primary-color); margin: 0; }
-
-/* CHANGED: Added #class-count-display to the group */
 #class-count-display,
 #member-count { 
     margin: 8px 0 0; font-size: 1.1em; color: #555;
@@ -91,15 +93,26 @@ tbody tr:nth-child(even) { background-color: var(--secondary-color); }
         font-size: 2.2em; line-height: 1; cursor: pointer; padding: 0 5px;
     }
 
+    /* --- START: GLASSMORPHISM MENU STYLE --- */
     .sidenav {
         display: block; position: fixed; z-index: 1000; top: 0; left: 0;
-        width: 270px; height: 100%; background-color: #fff; padding: 20px;
-        box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+        width: 270px; height: 100%;
+        padding: 20px;
+        
+        /* The Glass Effect */
+        background-color: rgba(255, 255, 255, 0.4); /* 1. Background โปร่งแสง */
+        backdrop-filter: blur(15px);                 /* 2. ทำให้พื้นหลังเบลอ */
+        -webkit-backdrop-filter: blur(15px);         /* (สำหรับ Safari) */
+        border-right: 1px solid rgba(255, 255, 255, 0.2); /* 3. ขอบแก้วเล็กน้อย */
+        
         transform: translateX(-100%);
         transition: transform 0.3s ease-in-out;
     }
     .sidenav.open { transform: translateX(0); }
-    .sidenav h2 { margin-top: 0; color: var(--primary-color); }
+    /* --- END: GLASSMORPHISM MENU STYLE --- */
+    
+    .sidenav h2 { margin-top: 0; color: #111; text-shadow: 0 0 5px white;}
+    .sidenav label { color: #111; text-shadow: 0 0 5px white;}
     .sidenav .select-group { margin-bottom: 20px; }
     .sidenav .download-pdf-btn { width: 100%; margin-top: 20px; }
     .content .download-pdf-btn { display: none !important; }
