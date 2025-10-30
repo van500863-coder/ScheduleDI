@@ -11,10 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     menuToggleBtn.addEventListener('click', openMenu);
     overlay.addEventListener('click', closeMenu);
     
-    // --- ការ​កំណត់​ค่า ---
-    const API_KEY = 'AIzaSyANp_N7Jtj8EKeBQCYj9Kq4L6pZw-kodko';
-    const SPREADSHEET_ID = '1eRyPoifzyvB4oBmruNyXcoKMKPRqjk6xDD6-bPNW6pc';
-    const SHEET_NAME = 'DIList';
+    // --- START: NEW CONFIGURATION (NO API KEY) ---
+    // សូម​បិទ​ភ្ជាប់​តំណ CSV របស់​អ្នក​នៅ​ទីនេះ
+    const PUBLISHED_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRny6z0kXP2O7d1Yl4tUk0m9J-vo-Ebw72MZIm5Nq2veCqFu18F-0Wgj06XeKyhABjbG1jQmWyQd-Sa/pub?gid=1542294647&single=true&output=csv';
+    // --- END: NEW CONFIGURATION ---
 
     // --- ធាតុ​ HTML ---
     const daySelects = document.querySelectorAll('#day-select');
@@ -30,60 +30,70 @@ document.addEventListener('DOMContentLoaded', () => {
     let fullData = [];
     let classInfo = {};
 
+    // --- START: UPDATED fetchSheetData FUNCTION ---
     async function fetchSheetData() {
         loader.style.display = 'block';
         classSelects.forEach(sel => sel.disabled = true);
         clearOutput();
-        const ranges = [`${SHEET_NAME}!L9:L381`, `${SHEET_NAME}!R9:R381`, `${SHEET_NAME}!AC9:AI381`];
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchGet?ranges=${ranges.join('&ranges=')}&key=${API_KEY}`;
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
-            const json = await response.json();
-            processData(json.valueRanges[0].values || [], json.valueRanges[1].values || [], json.valueRanges[2].values || []);
 
-            // --- START: NEW LOGIC TO DISPLAY TODAY'S SCHEDULE ON LOAD ---
-            const dayMap = ['AI', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH']; // អាទិត្យ=0, ចន្ទ=1...
+        try {
+            const response = await fetch(PUBLISHED_CSV_URL);
+            if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+            
+            const csvText = await response.text();
+            const allRows = csvText.split(/\r?\n/).map(row => row.split(','));
+
+            // Data starts from row 9, which is index 8 in the array
+            const dataRows = allRows.slice(8);
+            
+            processData(dataRows);
+
+            // Logic to display today's schedule on load
+            const dayMap = ['AI', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH'];
             const todayIndex = new Date().getDay();
             const todayValue = dayMap[todayIndex];
-
-            // កំណត់ Dropdown ថ្ងៃ ឲ្យ​ត្រូវ​នឹង​ថ្ងៃ​នេះ
             daySelects.forEach(sel => sel.value = todayValue);
-
-            // កំណត់ Dropdown ថ្នាក់ ឲ្យ​ទៅ​ជា "គ្រប់ថ្នាក់" ជា​ค่า​เริ่มต้น
             classSelects.forEach(sel => sel.value = 'all');
-
-            // បន្ទាប់​ពី​កំណត់​ค่า​រួចរាល់ សូម​สั่ง​ឲ្យ​បង្ហាញ​កាលវិភាគ
             displaySchedule();
-            // --- END: NEW LOGIC ---
 
         } catch (error) {
-            console.error('Failed to fetch data:', error);
-            scheduleTableContainer.innerHTML = `<p style="color: red;"><strong>มีปัญหาในการดึงข้อมูล:</strong> ${error.message}.</p>`;
+            console.error('Failed to fetch or process data:', error);
+            scheduleTableContainer.innerHTML = `<p style="color: red;"><strong>มีปัญหาในการดึงข้อมูล:</strong> ${error.message}. សូម​ពិនិត្យ​មើល​តំណ "Publish to the web" របស់អ្នក។</p>`;
         } finally {
             loader.style.display = 'none';
         }
     }
+    // --- END: UPDATED fetchSheetData FUNCTION ---
 
-    function processData(nameValues, classValues, scheduleValues) {
+    // --- START: UPDATED processData FUNCTION ---
+    function processData(dataRows) {
         fullData = [];
         const classAggregator = {};
-        for (let i = 0; i < classValues.length; i++) {
-            const className = classValues[i]?.[0];
-            const personName = nameValues[i]?.[0];
+
+        dataRows.forEach(row => {
+            // Column mapping: L=11, R=17, AC=28, AD=29, etc.
+            const personName = row[11];
+            const className = row[17];
+
             if (className && personName) {
                 if (!classAggregator[className]) classAggregator[className] = { count: 0 };
                 classAggregator[className].count++;
-                const scheduleRow = scheduleValues[i] || [];
+                
                 fullData.push({
-                    personName, className,
-                    schedules: { AC: scheduleRow[0] || '-', AD: scheduleRow[1] || '-', AE: scheduleRow[2] || '-', AF: scheduleRow[3] || '-', AG: scheduleRow[4] || '-', AH: scheduleRow[5] || '-', AI: scheduleRow[6] || '-' }
+                    personName,
+                    className,
+                    schedules: {
+                        AC: row[28] || '-', AD: row[29] || '-', AE: row[30] || '-',
+                        AF: row[31] || '-', AG: row[32] || '-', AH: row[33] || '-',
+                        AI: row[34] || '-'
+                    }
                 });
             }
-        }
+        });
         classInfo = classAggregator;
         populateClassDropdown();
     }
+    // --- END: UPDATED processData FUNCTION ---
     
     function populateClassDropdown() {
         const optionsHTML = `
@@ -94,9 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
         classSelects.forEach(sel => { sel.innerHTML = optionsHTML; sel.disabled = false; });
     }
 
-    // <<<<<<< CHANGED: Made the 'event' parameter optional
-    function displaySchedule(event) { 
-        // Sync dropdowns only if a real user event triggered this function
+    function displaySchedule(event) {
         if (event) {
             const source = event.target;
             const value = source.value;
@@ -107,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedDay = daySelects[0].value;
         const selectedClass = classSelects[0].value;
 
-        if (window.innerWidth <= 768 && event) closeMenu(); // Only close menu on user action
+        if (window.innerWidth <= 768 && event) closeMenu();
         if (!selectedDay || !selectedClass) { clearOutput(); return; }
         
         let tableHTML = '';
@@ -116,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectedClass === "all") {
             const totalClasses = Object.keys(classInfo).length;
             classNameDisplay.textContent = `កាលវិភាគសម្រាប់: គ្រប់ថ្នាក់`;
-            classCountDisplay.textContent = `ចំនួនថ្នាក់សរុប: ${totalClasses} ថ្នាក់`;
+            classCountDisplay.textContent = `จำนวนថ្នាក់សរុប: ${totalClasses} ថ្នាក់`;
             memberCountDisplay.textContent = `សមាជិកសរុប: ${fullData.length} នាក់`;
             
             tableHTML = `<table><thead><tr><th>ឈ្មោះ</th><th>ថ្នាក់</th><th>កាលវិភាគ (${daySelects[0].options[daySelects[0].selectedIndex].text})</th></tr></thead><tbody>`;
@@ -171,5 +179,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetchSheetData();
 });
-
-
