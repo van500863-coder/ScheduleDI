@@ -1,196 +1,173 @@
 document.addEventListener('DOMContentLoaded', () => {
-
-    // --- CONFIGURATION ---
-    const SHEET_ID = '1eRyPoifzyvB4oBmruNyXcoKMKPRqjk6xDD6-bPNW6pc';
+    // --- Sidenav Menu Logic ---
+    const menuToggleBtn = document.getElementById('menu-toggle-btn');
+    const sidenav = document.getElementById('sidenav-controls');
+    const overlay = document.getElementById('menu-overlay');
+    const desktopControlsContainer = document.querySelector('.desktop-controls');
+    const sidenavControlsContent = document.querySelector('.sidenav');
+    desktopControlsContainer.innerHTML = sidenavControlsContent.innerHTML;
+    function openMenu() { sidenav.classList.add('open'); overlay.classList.add('show'); }
+    function closeMenu() { sidenav.classList.remove('open'); overlay.classList.remove('show'); }
+    menuToggleBtn.addEventListener('click', openMenu);
+    overlay.addEventListener('click', closeMenu);
+    
+    // --- ការ​កំណត់​ค่า ---
+    const API_KEY = 'AIzaSyDUC69UL6RxUSaBcJ7rGMovgGGSz3LClck';
+    const SPREADSHEET_ID = '1eRyPoifzyvB4oBmruNyXcoKMKPRqjk6xDD6-bPNW6pc';
     const SHEET_NAME = 'DIList';
-    const DATA_RANGE = 'L9:AI381'; 
-    
-    // --- DOM ELEMENTS ---
-    const daySelect = document.getElementById('day-select');
-    const shiftSelect = document.getElementById('shift-select');
-    const classSelect = document.getElementById('class-select');
-    const scheduleContainer = document.getElementById('schedule-table-container');
-    const entryCountEl = document.getElementById('entry-count');
-    const classCountEl = document.getElementById('class-count');
-    const downloadBtn = document.getElementById('download-pdf-btn');
+
+    // --- ធាតុ​ HTML ---
+    const daySelects = document.querySelectorAll('#day-select');
+    const classSelects = document.querySelectorAll('#class-select');
+    const scheduleTableContainer = document.getElementById('schedule-table-container');
+    const classNameDisplay = document.getElementById('class-name-display');
+    const memberCountDisplay = document.getElementById('member-count');
+    const classCountDisplay = document.getElementById('class-count-display');
     const loader = document.getElementById('loader');
+    const downloadBtns = document.querySelectorAll('.download-pdf-btn');
 
-    // --- GLOBAL STATE ---
+    // --- កន្លែង​ផ្ទុក​ទិន្នន័យ ---
     let fullData = [];
+    let classInfo = {};
 
-    // --- COLUMN MAPPING ---
-    const columnMap = {
-        'ឈ្មោះ': 0, 'ថ្នាក់': 6, 'AC': 17, 'AD': 18, 'AE': 19, 'AF': 20, 'AG': 21, 'AH': 22, 'AI': 23
-    };
-    
-    const dayNames = {
-        'AC': 'ថ្ងៃចន្ទ', 'AD': 'ថ្ងៃអង្គារ៍', 'AE': 'ថ្ងៃពុធ', 'AF': 'ថ្ងៃព្រហស្បតិ៍',
-        'AG': 'ថ្ងៃសុក្រ', 'AH': 'ថ្ងៃសៅរ៍', 'AI': 'ថ្ងៃអាទិត្យ'
-    };
-
-
-    async function fetchData() {
+    async function fetchSheetData() {
         loader.style.display = 'block';
-        scheduleContainer.innerHTML = '';
-
-        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}&range=${DATA_RANGE}`;
-
+        classSelects.forEach(sel => sel.disabled = true);
+        clearOutput();
+        const ranges = [`${SHEET_NAME}!L9:L381`, `${SHEET_NAME}!R9:R381`, `${SHEET_NAME}!AC9:AI381`];
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchGet?ranges=${ranges.join('&ranges=')}&key=${API_KEY}`;
         try {
             const response = await fetch(url);
-            let text = await response.text();
-            
-            const jsonString = text.match(/google\.visualization\.Query\.setResponse\((.*)\)/s)[1];
-            const data = JSON.parse(jsonString);
+            if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
+            const json = await response.json();
+            processData(json.valueRanges[0].values || [], json.valueRanges[1].values || [], json.valueRanges[2].values || []);
 
-            fullData = data.table.rows.map(row => {
-                const nameValue = row.c[columnMap['ឈ្មោះ']] ? row.c[columnMap['ឈ្មោះ']].v : null;
-                const classValue = row.c[columnMap['ថ្នាក់']] ? row.c[columnMap['ថ្នាក់']].v : null;
-                
-                if (!nameValue || !classValue) return null;
+            // --- START: NEW LOGIC TO DISPLAY TODAY'S SCHEDULE ON LOAD ---
+            const dayMap = ['AI', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH']; // អាទិត្យ=0, ចន្ទ=1...
+            const todayIndex = new Date().getDay();
+            const todayValue = dayMap[todayIndex];
 
-                return {
-                    studentName: nameValue,
-                    className: classValue,
-                    schedule: {
-                        'AC': row.c[columnMap['AC']] ? row.c[columnMap['AC']].v : '---',
-                        'AD': row.c[columnMap['AD']] ? row.c[columnMap['AD']].v : '---',
-                        'AE': row.c[columnMap['AE']] ? row.c[columnMap['AE']].v : '---',
-                        'AF': row.c[columnMap['AF']] ? row.c[columnMap['AF']].v : '---',
-                        'AG': row.c[columnMap['AG']] ? row.c[columnMap['AG']].v : '---',
-                        'AH': row.c[columnMap['AH']] ? row.c[columnMap['AH']].v : '---',
-                        'AI': row.c[columnMap['AI']] ? row.c[columnMap['AI']].v : '---',
-                    }
-                };
-            }).filter(item => item !== null);
+            // កំណត់ Dropdown ថ្ងៃ ឲ្យ​ត្រូវ​នឹង​ថ្ងៃ​នេះ
+            daySelects.forEach(sel => sel.value = todayValue);
 
-            populateClassDropdown();
+            // កំណត់ Dropdown ថ្នាក់ ឲ្យ​ទៅ​ជា "គ្រប់ថ្នាក់" ជា​ค่า​เริ่มต้น
+            classSelects.forEach(sel => sel.value = 'all');
+
+            // បន្ទាប់​ពី​កំណត់​ค่า​រួចរាល់ សូម​สั่ง​ឲ្យ​បង្ហាញ​កាលវិភាគ
+            displaySchedule();
+            // --- END: NEW LOGIC ---
 
         } catch (error) {
-            console.error('Error fetching data:', error);
-            scheduleContainer.innerHTML = `<p style="color: red; text-align: center;">Error: មិនអាចទាញទិន្នន័យបានទេ។</p>`;
+            console.error('Failed to fetch data:', error);
+            scheduleTableContainer.innerHTML = `<p style="color: red;"><strong>มีปัญหาในการดึงข้อมูล:</strong> ${error.message}.</p>`;
         } finally {
             loader.style.display = 'none';
         }
     }
 
+    function processData(nameValues, classValues, scheduleValues) {
+        fullData = [];
+        const classAggregator = {};
+        for (let i = 0; i < classValues.length; i++) {
+            const className = classValues[i]?.[0];
+            const personName = nameValues[i]?.[0];
+            if (className && personName) {
+                if (!classAggregator[className]) classAggregator[className] = { count: 0 };
+                classAggregator[className].count++;
+                const scheduleRow = scheduleValues[i] || [];
+                fullData.push({
+                    personName, className,
+                    schedules: { AC: scheduleRow[0] || '-', AD: scheduleRow[1] || '-', AE: scheduleRow[2] || '-', AF: scheduleRow[3] || '-', AG: scheduleRow[4] || '-', AH: scheduleRow[5] || '-', AI: scheduleRow[6] || '-' }
+                });
+            }
+        }
+        classInfo = classAggregator;
+        populateClassDropdown();
+    }
+    
     function populateClassDropdown() {
-        const selectedDay = daySelect.value;
-        const selectedShift = shiftSelect.value;
-        let availableClasses = new Set(); 
-
-        if (selectedShift === 'all') {
-            fullData.forEach(item => availableClasses.add(item.className));
-        } else {
-            fullData.forEach(item => {
-                if (item.schedule[selectedDay] === selectedShift) {
-                    availableClasses.add(item.className);
-                }
-            });
-        }
-        
-        classSelect.innerHTML = '';
-        const sortedClasses = [...availableClasses].sort();
-
-        const allOption = document.createElement('option');
-        allOption.value = 'all';
-        allOption.textContent = 'គ្រប់ថ្នាក់';
-        classSelect.appendChild(allOption);
-
-        sortedClasses.forEach(className => {
-            const option = document.createElement('option');
-            option.value = className;
-            option.textContent = className;
-            classSelect.appendChild(option);
-        });
-        
-        renderSchedule();
+        const optionsHTML = `
+            <option value="" disabled selected>-- សូម​ជ្រើសរើស --</option>
+            <option value="all">គ្រប់ថ្នាក់</option>
+            ${Object.keys(classInfo).sort().map(name => `<option value="${name}">${name}</option>`).join('')}
+        `;
+        classSelects.forEach(sel => { sel.innerHTML = optionsHTML; sel.disabled = false; });
     }
 
-    function renderSchedule() {
-        const selectedDay = daySelect.value;
-        const selectedShift = shiftSelect.value;
-        const selectedClass = classSelect.value;
-        const selectedDayName = dayNames[selectedDay];
-        let dataToShow = fullData;
-
-        if (selectedShift !== 'all') {
-            dataToShow = dataToShow.filter(item => item.schedule[selectedDay] === selectedShift);
-        }
-        if (selectedClass !== 'all') {
-            dataToShow = dataToShow.filter(item => item.className === selectedClass);
+    // <<<<<<< CHANGED: Made the 'event' parameter optional
+    function displaySchedule(event) { 
+        // Sync dropdowns only if a real user event triggered this function
+        if (event) {
+            const source = event.target;
+            const value = source.value;
+            const selectorId = '#' + source.id;
+            document.querySelectorAll(selectorId).forEach(sel => { if (sel !== source) sel.value = value; });
         }
         
-        const classNamesInView = dataToShow.map(item => item.className);
-        const uniqueClassCount = new Set(classNamesInView).size;
-        
-        entryCountEl.textContent = `ចំនួនសរុប: ${dataToShow.length} នាក់`;
-        classCountEl.textContent = `ចំនួនថ្នាក់: ${uniqueClassCount} ថ្នាក់`;
-        
-        let tableHTML = `
-            <table id="schedule-table">
-                <thead>
-                    <tr>
-                        <th>ល.រ</th>
-                        <th>ឈ្មោះ</th>
-                        <th>ថ្នាក់</th>
-                        <th>កាលវិភាគ (${selectedDayName})</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+        const selectedDay = daySelects[0].value;
+        const selectedClass = classSelects[0].value;
 
-        if (dataToShow.length === 0) {
-            tableHTML += `<tr><td colspan="4" style="text-align: center;">មិនមានទិន្នន័យទេ។</td></tr>`;
+        if (window.innerWidth <= 768 && event) closeMenu(); // Only close menu on user action
+        if (!selectedDay || !selectedClass) { clearOutput(); return; }
+        
+        let tableHTML = '';
+        let relevantEntries = [];
+        
+        if (selectedClass === "all") {
+            const totalClasses = Object.keys(classInfo).length;
+            classNameDisplay.textContent = `កាលវិភាគសម្រាប់: គ្រប់ថ្នាក់`;
+            classCountDisplay.textContent = `ចំនួនថ្នាក់សរុប: ${totalClasses} ថ្នាក់`;
+            memberCountDisplay.textContent = `សមាជិកសរុប: ${fullData.length} នាក់`;
+            
+            tableHTML = `<table><thead><tr><th>ឈ្មោះ</th><th>ថ្នាក់</th><th>កាលវិភាគ (${daySelects[0].options[daySelects[0].selectedIndex].text})</th></tr></thead><tbody>`;
+            relevantEntries = fullData.filter(item => item.schedules[selectedDay] && item.schedules[selectedDay].trim() !== '-');
+            relevantEntries.forEach(item => tableHTML += `<tr><td>${item.personName}</td><td>${item.className}</td><td>${item.schedules[selectedDay]}</td></tr>`);
         } else {
-            dataToShow.forEach((item, index) => {
-                tableHTML += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${item.studentName}</td>
-                        <td>${item.className}</td>
-                        <td>${item.schedule[selectedDay]}</td>
-                    </tr>`;
-            });
+            classNameDisplay.textContent = `ថ្នាក់: ${selectedClass}`;
+            classCountDisplay.textContent = '';
+            memberCountDisplay.textContent = `ចំនួនសមាជិក: ${classInfo[selectedClass].count} នាក់`;
+
+            tableHTML = `<table><thead><tr><th>ឈ្មោះ</th><th>កាលវិភាគ (${daySelects[0].options[daySelects[0].selectedIndex].text})</th></tr></thead><tbody>`;
+            relevantEntries = fullData.filter(item => item.className === selectedClass && item.schedules[selectedDay] && item.schedules[selectedDay].trim() !== '-');
+            relevantEntries.forEach(item => tableHTML += `<tr><td>${item.personName}</td><td>${item.schedules[selectedDay]}</td></tr>`);
         }
+        
+        if (relevantEntries.length === 0) tableHTML += `<tr><td colspan="${(selectedClass === 'all') ? 3 : 2}">មិន​មាន​កាលវិភាគ​សម្រាប់​ថ្ងៃ​នេះ</td></tr>`;
         tableHTML += `</tbody></table>`;
-        scheduleContainer.innerHTML = tableHTML;
+        scheduleTableContainer.innerHTML = tableHTML;
+        downloadBtns.forEach(btn => btn.style.display = 'block');
     }
 
-    async function downloadPDF() {
-        // --- NEW DEBUGGING CODE ---
-        console.log("Starting PDF Download...");
-        console.log("Checking for jsPDF library:", window.jspdf);
-        console.log("Checking for autoTable plugin:", window.jspdf.autoTable);
-        // --- END DEBUGGING CODE ---
+    function clearOutput() {
+        scheduleTableContainer.innerHTML = '';
+        classNameDisplay.textContent = '';
+        classCountDisplay.textContent = '';
+        memberCountDisplay.textContent = '';
+        downloadBtns.forEach(btn => btn.style.display = 'none');
+    }
 
-        // Check if the libraries are loaded before trying to use them
-        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.autoTable === 'undefined') {
-            console.error("jsPDF or autoTable plugin is not loaded correctly!");
-            alert("Error: មិនអាចបង្កើត PDF បានទេ, Library មិនបានផ្ទុកត្រឹមត្រូវ។");
-            return;
-        }
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        
-        doc.setFont('Helvetica'); 
-        doc.text("Kastevichea", 14, 15);
-        
-        doc.autoTable({
-            html: '#schedule-table',
-            startY: 25,
-            theme: 'grid',
-            headStyles: { fillColor: [74, 144, 226] }
+    function downloadPDF() {
+        const element = document.getElementById('schedule-output');
+        const selectedClass = classSelects[0].value;
+        const selectedDayText = daySelects[0].options[daySelects[0].selectedIndex].text;
+        let filename = (selectedClass === 'all') 
+            ? `កាលវិភាគ-គ្រប់ថ្នាក់-${selectedDayText}.pdf`
+            : `កាលវិភាគ-${selectedClass}-${selectedDayText}.pdf`;
+        const opt = {
+          margin: 1, filename: filename, image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        downloadBtns.forEach(btn => btn.style.display = 'none');
+        html2pdf().from(element).set(opt).save().then(() => {
+            downloadBtns.forEach(btn => btn.style.display = 'block');
         });
-
-        doc.save(`Schedule.pdf`);
     }
 
-    // --- EVENT LISTENERS ---
-    daySelect.addEventListener('change', populateClassDropdown);
-    shiftSelect.addEventListener('change', populateClassDropdown);
-    classSelect.addEventListener('change', renderSchedule);
-    downloadBtn.addEventListener('click', downloadPDF);
+    // --- Event Listeners ---
+    daySelects.forEach(sel => sel.addEventListener('change', displaySchedule));
+    classSelects.forEach(sel => sel.addEventListener('change', displaySchedule));
+    downloadBtns.forEach(btn => btn.addEventListener('click', downloadPDF));
 
-    // --- INITIALIZATION ---
-    fetchData();
+    fetchSheetData();
 });
