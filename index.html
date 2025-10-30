@@ -21,7 +21,7 @@
         </header>
 
         <div id="sidenav-controls" class="sidenav">
-            <h2>សូមស្វាគមន៍</h2>
+            <h2>ជម្រើស</h2>
             <div class="select-group">
                 <label for="day-select">ជ្រើសរើសថ្ងៃ:</label>
                 <select id="day-select">
@@ -40,6 +40,16 @@
                     <option value="">កំពុង​ទាញ​ទិន្នន័យ...</option>
                 </select>
             </div>
+            <div class="select-group">
+                <label for="shift-select">ជ្រើសរើសវេន:</label>
+                <select id="shift-select">
+                    <option value="all">គ្រប់វេន</option>
+                    <option value="មួយព្រឹក">មួយព្រឹក</option>
+                    <option value="មួយរសៀល">មួយរសៀល</option>
+                    <option value="ពេញម៉ោង">ពេញម៉ោង</option>
+                    <option value="ពេលយប់">ពេលយប់</option>
+                </select>
+            </div>
             <button class="download-pdf-btn" style="display: none;">ទាញយកជា PDF</button>
         </div>
 
@@ -54,7 +64,6 @@
                     <p id="member-count"></p>
                 </div>
                 <div id="schedule-table-container"></div>
-                 <button class="download-pdf-btn" style="display: none;">ទាញយកជា PDF</button>
             </div>
         </main>
     </div>
