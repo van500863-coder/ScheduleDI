@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     overlay.addEventListener('click', closeMenu);
     
     // --- ការ​កំណត់​ค่า ---
-    const API_KEY = 'AIzaSyDUC69UL6RxUSaBcJ7rGMovgGGSz3LClck';
+    const API_KEY = 'AIzaSyANp_N7Jtj8EKeBQCYj9Kq4L6pZw-kodko';
     const SPREADSHEET_ID = '1eRyPoifzyvB4oBmruNyXcoKMKPRqjk6xDD6-bPNW6pc';
     const SHEET_NAME = 'DIList';
 
@@ -171,3 +171,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fetchSheetData();
 });
+
