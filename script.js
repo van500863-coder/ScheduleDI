@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Failed to fetch or process data:', error);
-            scheduleTableContainer.innerHTML = `<p style="color: red;"><strong>มีปัญหาในการดึงข้อมูล:</strong> ${error.message}. សូម​ពិនិត្យ​មើល​តំណ "Publish to the web" របស់អ្នក។</p>`;
+            scheduleTableContainer.innerHTML = `<p style="color: red;"><strong>មានបញ្ហា:</strong> ${error.message}. សូម​ពិនិត្យ​មើល​តំណ "Publish to the web" របស់អ្នក។</p>`;
         } finally {
             loader.style.display = 'none';
         }
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectedClass === "all") {
             const totalClasses = Object.keys(classInfo).length;
             classNameDisplay.textContent = `កាលវិភាគសម្រាប់: គ្រប់ថ្នាក់`;
-            classCountDisplay.textContent = `จำนวนថ្នាក់សរុប: ${totalClasses} ថ្នាក់`;
+            classCountDisplay.textContent = `ចំនួនថ្នាក់សរុប: ${totalClasses} ថ្នាក់`;
             memberCountDisplay.textContent = `សមាជិកសរុប: ${fullData.length} នាក់`;
             
             tableHTML = `<table><thead><tr><th>ឈ្មោះ</th><th>ថ្នាក់</th><th>កាលវិភាគ (${daySelects[0].options[daySelects[0].selectedIndex].text})</th></tr></thead><tbody>`;
